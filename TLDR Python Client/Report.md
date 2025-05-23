@@ -1,27 +1,47 @@
+Issue: [#260](https://github.com/tldr-pages/tldr-python-client/issues/260)
+### Project Summary
+#### What
+- Python implementation of [TLDR](https://github.com/tldr-pages)
+- Gives simplified man pages on linux and other platforms
+- Portable, lightweight, quick, and helpful
+- Minimalist help files
+- Written in Python
+#### Why
+- Written in Python
+- Easy concept to understand
+- Simple code base
+- Maintained by small team/one guy
+- Small issues, not many long standing ones
+- 652 stars on GitHub, so people actually use it!
+
 ***
 ### Bug Description
-- Type of bug
-	- Incorrect data processing. HTTPie alters JSON string literal content by prematurely unescaping Unicode sequences when the server sends a text/html Content-Type for a JSON body, even if the user specifies --json
-- Coding Language
-	- Python
-- Problem Description
-	When a server incorrectly labels a JSON response body as text/html (with no charset), and the user uses the --json flag, HTTPie unescapes \uXXXX sequences (like \u003c) within JSON string values to their literal characters (like <) in the final pretty-printed JSON output. This misrepresents the original JSON data sent by the server, which contained the escape sequences.
 
-***
-### What I did to find the bug
+According to the documentation:
+```
+Clients MUST default to displaying the page associated with the platform on which the client is running.
 
-Spent a long time understanding the codebase and how it works, then created a program "repro_httpie_bug.py" that would reproduce the bug. This allowed us to use the python debugger to step through and understand what parts of the codebase could be causing the problem. 
+For example, a client running on _Windows 11_ will default to displaying pages from the `windows` platform. Clients MAY provide a user-configurable option to override this behaviour, however.
 
-We realized that json.py calls the function `json.dumps` with the parameter `ensure_ascii=False` and the comment `# unicode escapes to improve readability`. This indicates that this functionality is an intended feature rather than a bug.
+If a page is not available for the host platform, clients MUST fall back to the special `common` platform.
 
-The true bug is that the server that the user is contacting sends the header `Content-Type: text/html` with a json body.
+If a page is not available for either the host platform or the `common` platform, then clients SHOULD search other platforms and display a page from there - along with a warning message.
+```
 
-***
-### What I did to fix the bug
+This was not, in fact, the actual behavior of the program. Instead, it would fail to fall back to the common platform if the specified platform was not available, displaying the error specified in the docs for only a completely missing page:
 
-If we wanted to change the functionality to act as the bug reporter wants it to, we could easily just change this parameter. We could set `ensure_ascii=True` for just this instance of the function call. 
+```
+If a page cannot be found in _any_ platform, then it is RECOMMENDED that clients display an error message with a link to create a new issue against the `tldr-pages/tldr` GitHub repository. Said link might take the following form:
 
-***
-### Why the fix worked
+https://github.com/tldr-pages/tldr/issues/new?title=page%20request:%20{command_name}
 
-This would cause the json interpreter to keep the \uXXXX sequences as they are instead of decoding them. A better fix would be for the server to send the correct header, `Content-Type: application/json`, which would then lead to the correct json.dumps function call with `ensure_ascii=False`.
+where `{command_name}` is the name of the command that was not found. Clients that have control over their exit code on the command-line (i.e. clients that provide a CLI) MUST exit with a non-zero exit code in addition to showing the above message.
+```
+### Resolving change
+
+Someone else submitted a fix before we could, but we found a similar fix to them which was:
+(lines 254-256 of tldr.py)
++ else:
+	+ if 'common' not in platforms:
+		+ platforms = platforms+\['common'\]
+
