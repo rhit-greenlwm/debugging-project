@@ -7,3 +7,6 @@ The first project we worked on was the [TLDR Python Client](https://github.com/t
 # HTTPie/cli
 
 The second project we explored was [HTTPie/cli](https://github.com/httpie/cli), a command-line HTTP client designed for API usage. Unlike tools like `curl`, HTTPie emphasizes readability and ease of use by formatting output in a visually appealing, colorized way (<- related to the bug we solved). It allows users to send HTTP requests easily and supports features such as JSON formatting and plugins. While it works across platforms, its primary users are developers and testers are on Linux based OSes.
+
+### Original Bug Report
+[Mixed output causes httpie to preprocess it incorrectly](https://github.com/httpie/cli/issues/1620)
